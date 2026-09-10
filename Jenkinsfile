@@ -23,8 +23,8 @@ pipeline {
         stage('Build & Run Tests (Docker)') {
             steps {
                 sh 'rm -rf target && mkdir -p target'
-                sh 'docker compose build playwright-java-tests'
-                sh 'docker compose run --rm playwright-java-tests'
+                sh 'docker compose build playwright-tests'
+                sh 'docker compose run --rm playwright-tests'
             }
         }
         stage('Resume/JD Matcher AI Tests') {

@@ -1,5 +1,5 @@
 services:
-  playwright-java-tests:
+  playwright-tests:
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,6 +8,7 @@ services:
     ipc: host
     environment:
       - CI=true
+      - HEADLESS=true
 
   resume-matcher-tests:
     build:
@@ -36,6 +37,5 @@ services:
       - ./target/surefire-reports:/app/input-surefire-reports:ro
     environment:
       - ABACUS_API_KEY=${ABACUS_API_KEY}
-    command: ["mvn", "-q", "compile", "exec:java",
-              "-Dexec.mainClass=com.example.aitriage.FailureTriage",
-              "-Dexec.args=/app/input-surefire-reports /app/target/triage-report.md"]
+    command: ["python", "-m", "ai_triage.failure_triage",
+              "/app/input-surefire-reports", "/app/target/triage-report.md"]

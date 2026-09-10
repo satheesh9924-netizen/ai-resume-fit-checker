@@ -1,6 +1,6 @@
-FROM mcr.microsoft.com/playwright/java:v1.49.0-noble
+FROM mcr.microsoft.com/playwright/python:v1.49.0-noble
 WORKDIR /app
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-CMD ["mvn", "test", "-Dheadless=true"]
+CMD ["pytest"]

@@ -10,3 +10,7 @@ target/
 .classpath
 .project
 .settings/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
