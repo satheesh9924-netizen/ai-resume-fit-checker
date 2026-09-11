@@ -1,30 +1,27 @@
-AI-Augmented Test Automation Platform (Personal Project)
+AI Resume Fit Checker (Personal Project)
 
-- Architected an end-to-end test automation pipeline using Playwright (Java) + TestNG, containerized with Docker/Docker Compose, and orchestrated by a self-hosted Jenkins CI/CD pipeline with automatic SCM-triggered builds (poll + webhook), eliminating manual test execution.
+- Architected an end-to-end test automation pipeline using Playwright (Python) + pytest, containerized with Docker/Docker Compose, and orchestrated by a self-hosted Jenkins CI/CD pipeline with automatic SCM-triggered builds (poll + webhook), eliminating manual test execution.
 - Designed a 5-stage declarative Jenkins pipeline (Docker environment validation, containerized test execution, AI evaluation suites, AI failure triage, unified reporting) with credential-scoped secrets management via Jenkins Credentials store — zero secrets committed to source control.
-- Built a structured LLM-output reliability layer around Claude API calls (via an OpenAI-compatible gateway): defensive JSON extraction/parsing, retry-on-malformed-output logic, and Jackson version-conflict resolution across a multi-module Maven build.
-- Engineered an AI-powered resume-to-job-description matching service (Claude Sonnet) with a 5-category automated evaluation suite covering schema validation, golden-set accuracy regression, groundedness/hallucination detection (keyword-overlap grounding checks), prompt-injection adversarial testing, and demographic bias/fairness testing — directly addressing known production risks in AI-driven hiring tools.
-- Built an AI CI-failure triage bot (Claude Haiku) that parses Surefire/JUnit XML reports and auto-classifies failures (flaky / regression / environment) with root-cause summaries, reducing manual failure-triage overhead.
-- Implemented unified Allure test reporting aggregated across 3 independent Maven modules into a single dashboard, integrated into Jenkins with screenshot/trace capture on failure for debuggability.
-- Debugged and resolved production-grade integration issues independently: Docker bind-mount/mvn clean conflicts, transitive dependency (Jackson) version mismatches, Jenkins process environment (PATH) isolation, and LLM output non-determinism (malformed JSON, prompt-injection resistance, golden-set calibration).
+- Built a structured LLM-output reliability layer around Claude API calls (via an OpenAI-compatible gateway): defensive JSON extraction/parsing and retry-on-malformed-output logic, using `defusedxml` for hardened (XXE-safe) parsing of CI test reports.
+- Engineered an AI-powered resume-to-job-description matching service (Claude Sonnet) -- the core "AI Resume Fit Checker" -- with a 5-category automated evaluation suite covering schema validation, golden-set accuracy regression, groundedness/hallucination detection (keyword-overlap grounding checks), prompt-injection adversarial testing, and demographic bias/fairness testing — directly addressing known production risks in AI-driven hiring tools.
+- Built an AI CI-failure triage bot (Claude Haiku) that parses JUnit/Surefire-style XML reports and auto-classifies failures (flaky / regression / environment) with root-cause summaries, reducing manual failure-triage overhead.
+- Implemented unified Allure test reporting aggregated across 3 independent Python projects into a single dashboard, integrated into Jenkins with screenshot/trace capture on failure for debuggability.
+- Debugged and resolved production-grade integration issues independently: Colima's `/tmp` bind-mount gotcha, `allure-pytest` API surface quirks, pytest's `Test*` auto-collection colliding with domain types, and LLM output non-determinism (malformed JSON, prompt-injection resistance, golden-set calibration).
 
-Tech Stack: Java 17 · Maven · Playwright · TestNG · Docker · Docker Compose · Jenkins (Pipeline-as-Code) · Allure · Claude API (Anthropic, via OpenAI-compatible gateway) · Jackson · Git/GitHub · Colima
+Tech Stack: Python 3.12 · pip · Playwright · pytest · Docker · Docker Compose · Jenkins (Pipeline-as-Code) · Allure · Claude API (Anthropic, via OpenAI-compatible gateway) · openai SDK · defusedxml · Git/GitHub · Colima
 
 AI/LLM Testing Techniques Applied: golden-set regression testing, LLM-output groundedness/hallucination checks, adversarial prompt-injection testing, bias & fairness testing, structured-output schema validation, retry-based reliability patterns for non-deterministic outputs
 
 
 
-# playwright-java-jenkins
+# AI Resume Fit Checker
 
 End-to-end test automation pipeline: Playwright (Python) + pytest, containerized with Docker,
-run by a local Jenkins instance, reported with Allure -- plus two Claude-powered testing
-modules (resume/JD matcher with a full AI-eval test suite, and an AI CI-failure triage bot).
+run by a local Jenkins instance, reported with Allure -- built around a Claude-powered AI
+Resume Fit Checker (resume/JD matcher with a full AI-eval test suite), plus an AI CI-failure
+triage bot.
 
-Repo: https://github.com/satheesh9924-netizen/playwright-java-jenkins
-
-> Originally built in Java (Playwright Java + TestNG + Maven); ported to Python
-> (Playwright Python + pytest + pip) on the `python-migration` branch. The repo name is a
-> holdover from that history.
+Repo: https://github.com/satheesh9924-netizen/ai-resume-fit-checker
 
 ## Repo layout
 
@@ -98,7 +95,7 @@ OpenAI-compatible gateway -- not Anthropic's native API directly. That's why the
 Auth: `ABACUS_API_KEY` env var (mapped from the Jenkins credential in CI; export it locally to
 run the modules yourself).
 
-### `resume-matcher`
+### `resume-matcher` -- the AI Resume Fit Checker
 
 Takes a resume + job description, returns a structured match verdict (`match_score`, `verdict`,
 `matched_skills`, `missing_skills`, `reasoning`). Model: `claude-sonnet-5`.

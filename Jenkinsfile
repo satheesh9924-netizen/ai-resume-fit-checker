@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        COMPOSE_PROJECT_NAME = "playwright-java-jenkins-${env.BUILD_NUMBER}"
+        COMPOSE_PROJECT_NAME = "ai-resume-fit-checker-${env.BUILD_NUMBER}"
     }
     triggers {
         githubPush()
