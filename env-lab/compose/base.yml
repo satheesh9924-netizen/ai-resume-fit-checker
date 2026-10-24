@@ -1,0 +1,52 @@
+# Shared building blocks used by EVERY deployment model (SaaS, on-prem, ...).
+# Deployment-specific pieces live in the overlay files (saas.yml, onprem-acme.yml).
+# The test runner is a container on the SAME network, so it reaches services by name
+# (http://web, http://orders:8080, ...). Nothing is published on the host, which is what
+# lets many copies run side by side (one compose project per run = an ephemeral environment).
+name: itlab
+
+services:
+  # Stand-in for the Payment microservice. WireMock replays canned responses from mappings/.
+  payment:
+    image: wiremock/wiremock:3.9.1
+    command: ["--global-response-templating"]
+    volumes:
+      - ../wiremock/payment:/home/wiremock:ro
+
+  # Fault injection in front of Payment: tests add latency "toxics" through its REST API.
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    command: ["-host=0.0.0.0", "-config=/config/toxiproxy.json"]
+    volumes:
+      - ../toxiproxy/toxiproxy.json:/config/toxiproxy.json:ro
+    depends_on:
+      - payment
+
+  # Message broker with a dead-letter queue pre-declared from definitions.json.
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: lab
+      RABBITMQ_DEFAULT_PASS: lab
+    volumes:
+      - ../rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-lab.conf:ro
+      - ../rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  # The test runner. Started on demand (docker compose run), never by "up".
+  tests:
+    profiles: ["tests"]
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    volumes:
+      - ../target:/app/target
+    ipc: host
+    environment:
+      - HEADLESS=true
+      - LAB_TARGET=${LAB_TARGET:-saas-tenant-a}
+      - BUILD_NUMBER=${BUILD_NUMBER:-local}

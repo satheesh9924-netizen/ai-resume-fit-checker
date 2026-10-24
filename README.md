@@ -25,13 +25,14 @@ Repo: https://github.com/satheesh9924-netizen/ai-resume-fit-checker
 
 ## Repo layout
 
-Three independent Python projects, each with its own `requirements.txt`, `pytest.ini`, and `Dockerfile`:
+Four independent Python projects, each with its own `requirements.txt`, `pytest.ini`, and `Dockerfile`:
 
 ```
 .
 ├── tests/                  # e2e Playwright/pytest tests (root module)
 ├── resume-matcher/         # Resume-vs-JD fit matcher + AI-eval test suite
 ├── ai-triage/              # AI CI-failure triage bot (classifies FLAKY/REGRESSION/ENVIRONMENT)
+├── env-lab/                # One suite, many environments: SaaS (multi-tenant) vs on-prem (single-tenant)
 ├── Dockerfile               # root module image (mcr.microsoft.com/playwright/python)
 ├── docker-compose.yml       # all 4 services: e2e tests + both AI modules
 ├── Jenkinsfile               # 4-stage pipeline, see below
@@ -75,7 +76,9 @@ reachable, so the `githubPush()` webhook trigger is registered but dormant) and 
 4. **Resume/JD Matcher AI Tests** -- builds & runs `resume-matcher`'s test suite (needs `ABACUS_API_KEY`)
 5. **AI Failure Triage** -- runs `ai-triage`'s own test suite, then runs the triage bot itself against `target/surefire-reports` from stage 3, writing `ai-triage/target/triage-report.md`
 
-`post.always`: fixes any root-owned files Docker wrote into the three `target/` dirs, tears
+6. **Environment Lab (SaaS / on-prem)** -- runs `env-lab` against three targets (SaaS tenant A, SaaS tenant B, on-prem ACME), each in its own throw-away Docker environment. Placed last so it never blocks the stages above.
+
+`post.always`: fixes any root-owned files Docker wrote into the four `target/` dirs, tears
 down containers/networks, publishes JUnit results, archives artifacts (screenshots, traces,
 surefire reports, the triage markdown report), publishes the Allure report.
 
@@ -111,6 +114,26 @@ The test suite (`tests/test_*.py`) demonstrates the core AI-testing concepts:
 | `test_bias_fairness.py` | Two resumes, identical qualifications, differing only in name/grad-year -- asserts scores stay within tolerance |
 
 Golden fixtures live in `resume-matcher/tests/golden/` (all synthetic, no real PII).
+
+### `env-lab` -- one test suite, many environments
+
+Shows how a single automation suite is set up for different deployment models. The tests are
+deliberately simple; the environment around them is the point. See [env-lab/README.md](env-lab/README.md).
+
+| Concept | Where |
+|---|---|
+| Environment as data: layered profiles (defaults, deployment type, target, env vars) | `env-lab/profiles/`, `env_lab/config.py` |
+| Multi-tenant SaaS vs single-tenant on-prem, as Docker Compose overlays | `env-lab/compose/` |
+| Tenant isolation, capability and version gating (skipped with a reason) | `tests/test_tenant_isolation.py`, `tests/test_capabilities.py` |
+| Consumer-driven contract between Orders and Payment | `contracts/`, `env_lab/contract.py` |
+| Async messaging with a dead-letter queue, polled instead of slept | `tests/test_async_dlq.py` |
+| Failure and latency injection, client timeouts, idempotency | `tests/test_resilience.py` |
+| Ephemeral environment per run | `env-lab/scripts/run_lab.sh` |
+
+```
+bash env-lab/scripts/run_lab.sh saas saas-tenant-a
+bash env-lab/scripts/run_lab.sh onprem-acme onprem-acme
+```
 
 ### `ai-triage`
 

@@ -1,0 +1,22 @@
+{
+  "mappings": [
+    {
+      "priority": 1,
+      "request": { "method": "POST", "urlPath": "/payments", "headers": { "Idempotency-Key": { "absent": true } } },
+      "response": { "status": 400, "headers": { "Content-Type": "application/json" }, "jsonBody": { "error": "Idempotency-Key header required" } }
+    },
+    {
+      "priority": 2,
+      "request": { "method": "POST", "urlPath": "/payments", "headers": { "Idempotency-Key": { "matches": ".+" } } },
+      "response": { "status": 201, "headers": { "Content-Type": "application/json" }, "jsonBody": { "paymentId": "pay-1001", "status": "CAPTURED" } }
+    },
+    {
+      "request": { "method": "POST", "urlPath": "/payments/unavailable" },
+      "response": { "status": 503, "headers": { "Content-Type": "application/json", "Retry-After": "2" }, "jsonBody": { "error": "payment provider unavailable" } }
+    },
+    {
+      "request": { "method": "GET", "urlPath": "/payments/health" },
+      "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "jsonBody": { "status": "UP" } }
+    }
+  ]
+}

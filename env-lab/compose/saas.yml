@@ -1,0 +1,17 @@
+# MULTI-TENANT SaaS overlay.
+# ONE shared stack serves every tenant. The tenant is identified per request
+# (X-Tenant-ID header), not by deploying a separate copy for each customer.
+services:
+  orders:
+    image: wiremock/wiremock:3.9.1
+    command: ["--global-response-templating"]
+    volumes:
+      - ../wiremock/orders-saas:/home/wiremock:ro
+
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ../web/index.html:/usr/share/nginx/html/index.html:ro
+      - ../web/saas.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - orders

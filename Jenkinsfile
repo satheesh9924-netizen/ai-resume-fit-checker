@@ -46,6 +46,25 @@ pipeline {
                 }
             }
         }
+        stage('Environment Lab (SaaS / on-prem)') {
+            steps {
+                sh 'rm -rf env-lab/target && mkdir -p env-lab/target'
+                script {
+                    // One suite, three environments: each target gets its own throw-away copy of the
+                    // stack (own compose project, own network), is tested, then destroyed.
+                    def targets = [
+                        [stack: 'saas',        target: 'saas-tenant-a'],
+                        [stack: 'saas',        target: 'saas-tenant-b'],
+                        [stack: 'onprem-acme', target: 'onprem-acme'],
+                    ]
+                    for (t in targets) {
+                        stage("Lab: ${t.target}") {
+                            sh "RUN_ID=${env.BUILD_NUMBER}-${t.target} BUILD_NUMBER=${env.BUILD_NUMBER} bash env-lab/scripts/run_lab.sh ${t.stack} ${t.target}"
+                        }
+                    }
+                }
+            }
+        }
     }
     post {
         always {
@@ -54,15 +73,17 @@ pipeline {
                     -v "$(pwd)/target:/target" \
                     -v "$(pwd)/resume-matcher/target:/resume-matcher-target" \
                     -v "$(pwd)/ai-triage/target:/ai-triage-target" \
-                    alpine chown -R "$(id -u):$(id -g)" /target /resume-matcher-target /ai-triage-target || true
+                    -v "$(pwd)/env-lab/target:/env-lab-target" \
+                    alpine chown -R "$(id -u):$(id -g)" /target /resume-matcher-target /ai-triage-target /env-lab-target || true
             '''
             sh 'docker compose down --volumes --remove-orphans || true'
             junit testResults: '**/target/surefire-reports/*.xml', allowEmptyResults: true
-            archiveArtifacts artifacts: 'target/screenshots/*.png, target/traces/*.zip, target/surefire-reports/**, resume-matcher/target/surefire-reports/**, ai-triage/target/surefire-reports/**, ai-triage/target/triage-report.md', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'target/screenshots/*.png, target/traces/*.zip, target/surefire-reports/**, resume-matcher/target/surefire-reports/**, ai-triage/target/surefire-reports/**, ai-triage/target/triage-report.md, env-lab/target/surefire-reports/**, env-lab/target/screenshots/*.png, env-lab/target/traces/*.zip', allowEmptyArchive: true
             step([$class: 'AllureReportPublisher', includeProperties: false, jdk: '', results: [
                 [path: 'target/allure-results'],
                 [path: 'resume-matcher/target/allure-results'],
-                [path: 'ai-triage/target/allure-results']
+                [path: 'ai-triage/target/allure-results'],
+                [path: 'env-lab/target/allure-results']
             ]])
         }
     }

@@ -1,0 +1,18 @@
+{
+  "mappings": [
+    {
+      "priority": 2,
+      "request": { "method": "GET", "urlPath": "/orders/1001" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json", "X-Correlation-Id": "{{request.headers.X-Correlation-Id}}" },
+        "jsonBody": { "orderId": "1001", "tenant": "acme" }
+      }
+    },
+    {
+      "priority": 10,
+      "request": { "method": "GET", "urlPathPattern": "/orders/.*" },
+      "response": { "status": 404, "headers": { "Content-Type": "application/json" }, "jsonBody": { "error": "order not found" } }
+    }
+  ]
+}
