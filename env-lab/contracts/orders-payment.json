@@ -1,0 +1,20 @@
+{
+  "consumer": "orders-service",
+  "provider": "payment-service",
+  "interactions": [
+    {
+      "description": "a charge request with an idempotency key",
+      "request": {
+        "method": "POST",
+        "path": "/payments",
+        "headers": { "Content-Type": "application/json", "Idempotency-Key": "key-1001" },
+        "body": { "orderId": "1001", "amountMinor": 2500, "currency": "INR" }
+      },
+      "response": {
+        "status": 201,
+        "fields": { "paymentId": "string", "status": "string" },
+        "example": { "paymentId": "pay-1001", "status": "CAPTURED" }
+      }
+    }
+  ]
+}

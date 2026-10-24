@@ -1,0 +1,48 @@
+{
+  "mappings": [
+    {
+      "priority": 1,
+      "request": { "method": "GET", "urlPathPattern": "/orders/.*", "headers": { "X-Tenant-ID": { "absent": true } } },
+      "response": {
+        "status": 401,
+        "headers": { "Content-Type": "application/json", "X-Correlation-Id": "{{request.headers.X-Correlation-Id}}" },
+        "jsonBody": { "error": "tenant header required" }
+      }
+    },
+    {
+      "priority": 2,
+      "request": { "method": "GET", "urlPath": "/orders/1001", "headers": { "X-Tenant-ID": { "equalTo": "tenant-a" } } },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json", "X-Correlation-Id": "{{request.headers.X-Correlation-Id}}" },
+        "jsonBody": { "orderId": "1001", "tenant": "tenant-a" }
+      }
+    },
+    {
+      "priority": 2,
+      "request": { "method": "GET", "urlPath": "/orders/2001", "headers": { "X-Tenant-ID": { "equalTo": "tenant-b" } } },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json", "X-Correlation-Id": "{{request.headers.X-Correlation-Id}}" },
+        "jsonBody": { "orderId": "2001", "tenant": "tenant-b" }
+      }
+    },
+    {
+      "priority": 10,
+      "request": { "method": "GET", "urlPathPattern": "/orders/.*" },
+      "response": {
+        "status": 404,
+        "headers": { "Content-Type": "application/json", "X-Correlation-Id": "{{request.headers.X-Correlation-Id}}" },
+        "jsonBody": { "error": "order not found for this tenant" }
+      }
+    },
+    {
+      "request": { "method": "POST", "urlPath": "/orders/bulk" },
+      "response": { "status": 202, "headers": { "Content-Type": "application/json" }, "jsonBody": { "accepted": true } }
+    },
+    {
+      "request": { "method": "GET", "urlPath": "/dashboard" },
+      "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "jsonBody": { "widgets": 3 } }
+    }
+  ]
+}

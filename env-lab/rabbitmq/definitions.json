@@ -1,0 +1,19 @@
+{
+  "exchanges": [
+    { "name": "dlx", "vhost": "/", "type": "direct", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+  ],
+  "queues": [
+    { "name": "order.placed.dlq", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    {
+      "name": "order.placed", "vhost": "/", "durable": true, "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 1500,
+        "x-dead-letter-exchange": "dlx",
+        "x-dead-letter-routing-key": "order.placed.dlq"
+      }
+    }
+  ],
+  "bindings": [
+    { "source": "dlx", "vhost": "/", "destination": "order.placed.dlq", "destination_type": "queue", "routing_key": "order.placed.dlq", "arguments": {} }
+  ]
+}
